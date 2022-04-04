@@ -116,7 +116,7 @@ impl VisualGraph {
 
 // Render.
 impl VisualGraph {
-    fn render(&self, debug: bool, rb: &mut dyn RenderBackend) {
+    pub fn render(&self, debug: bool, rb: &mut dyn RenderBackend) {
         // Draw the nodes.
         for node in &self.nodes {
             node.render(debug, rb);
@@ -134,16 +134,13 @@ impl VisualGraph {
 }
 
 impl VisualGraph {
-    pub fn do_it(
+    pub fn prepare_render(
         &mut self,
-        debug_mode: bool,
         disable_opt: bool,
         disable_layout: bool,
-        rb: &mut dyn RenderBackend,
     ) {
         self.lower(disable_opt);
         Placer::new(self).layout(disable_layout);
-        self.render(debug_mode, rb);
     }
 
     fn lower(&mut self, disable_optimizations: bool) {

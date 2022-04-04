@@ -269,6 +269,7 @@ impl Lexer {
                     return Token::Identifier(num);
                 }
 
+                dbg!(&self.input[self.pos..]);
                 return Token::Error(self.pos);
             }
         }

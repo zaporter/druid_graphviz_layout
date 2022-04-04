@@ -34,10 +34,12 @@ impl CLIOptions {
 
 fn generate_svg(graph: &mut VisualGraph, options: CLIOptions) {
     let mut svg = SVGWriter::new();
-    graph.do_it(
-        options.debug_mode,
+    graph.prepare_render(
         options.disable_opt,
         options.disable_layout,
+    );
+    graph.render(
+        options.debug_mode,
         &mut svg,
     );
     let content = svg.finalize();

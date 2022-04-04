@@ -152,11 +152,7 @@ impl<'a> Scheduler<'a> {
                 let v = self.vl[i].clone();
                 // Place the nodes.
                 let x = self.first_schedule_x(&v);
-                if self.order.is_left_to_right() {
-                    self.place_vertical(&v, x);
-                } else {
-                    self.place_vertical(&v, x);
-                }
+                self.place_vertical(&v, x);
                 // Wipe the vertical.
                 self.vl[i].clear();
                 to_place -= 1;

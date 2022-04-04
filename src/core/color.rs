@@ -154,7 +154,7 @@ static KNOWN_COLORS: [(&str, u32); 148] = [
 #[derive(Clone, Copy)]
 pub struct Color {
     // Color in the format RGBA
-    color: u32,
+    pub color: u32,
 }
 
 impl Color {

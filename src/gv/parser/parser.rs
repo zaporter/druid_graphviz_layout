@@ -215,50 +215,52 @@ impl DotParser {
         let mut lst = ast::AttributeList::new();
 
         if let Token::OpenBracket = self.tok.clone() {
-            self.lex();
         } else {
             return to_error("Expected '['");
         }
 
-        while !matches!(self.tok, Token::CloseBracket) {
-            let prop: String;
-
-            if let Token::Identifier(id) = self.tok.clone() {
-                prop = id;
-                // Consume the property name.
-                self.lex();
-            } else {
-                return to_error("Expected property name");
-            }
-
-            if let Token::Equal = self.tok.clone() {
-                // Consume the '='.
-                self.lex();
-            } else {
-                return to_error("Expected '='");
-            }
-
-            if let Token::Identifier(value) = self.tok.clone() {
-                lst.add_attr(&prop, &value);
-                // Consume the value name.
-                self.lex();
-            } else {
-                return to_error("Expected value after assignment");
-            }
-
-            // Skip semicolon.
-            if let Token::Semicolon = self.tok.clone() {
-                self.lex()
-            }
-            // Skip commas.
-            if let Token::Comma = self.tok.clone() {
-                self.lex()
-            }
-        }
-        if let Token::CloseBracket = self.tok.clone() {
+        while matches!(self.tok, Token::OpenBracket) {
             self.lex();
-        } else {
-            return to_error("Expected ']'");
+            while !matches!(self.tok, Token::CloseBracket) {
+                let prop: String;
+
+                if let Token::Identifier(id) = self.tok.clone() {
+                    prop = id;
+                    // Consume the property name.
+                    self.lex();
+                } else {
+                    return to_error("Expected property name");
+                }
+
+                if let Token::Equal = self.tok.clone() {
+                    // Consume the '='.
+                    self.lex();
+                } else {
+                    return to_error("Expected '='");
+                }
+
+                if let Token::Identifier(value) = self.tok.clone() {
+                    lst.add_attr(&prop, &value);
+                    // Consume the value name.
+                    self.lex();
+                } else {
+                    return to_error("Expected value after assignment");
+                }
+
+                // Skip semicolon.
+                if let Token::Semicolon = self.tok.clone() {
+                    self.lex()
+                }
+                // Skip commas.
+                if let Token::Comma = self.tok.clone() {
+                    self.lex()
+                }
+            }
+            if let Token::CloseBracket = self.tok.clone() {
+                self.lex();
+            } else {
+                return to_error("Expected ']'");
+            }
         }
         Result::Ok(lst)
     }
