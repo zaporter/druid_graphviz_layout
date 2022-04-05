@@ -40,8 +40,8 @@ impl NodeAttachInfo {
 
     /// Align the node \p from to \p to.
     pub fn add(&mut self, from: NodeHandle, to: NodeHandle) {
-        assert!(!self.below(to).is_some(), "Node is already taken");
-        assert!(!self.above(from).is_some(), "Node is already set");
+        assert!(self.below(to).is_none(), "Node is already taken");
+        assert!(self.above(from).is_none(), "Node is already set");
         self.above[from.get_index()] = Some(to);
         self.below[to.get_index()] = Some(from);
     }
@@ -168,12 +168,11 @@ impl<'a> Scheduler<'a> {
             let last = self.last_x_for_row[level];
             let pos = self.vg.pos(*elem);
 
-            let offset;
-            if self.order.is_left_to_right() {
-                offset = pos.distance_to_left(true);
+            let offset = if self.order.is_left_to_right() {
+                pos.distance_to_left(true)
             } else {
-                offset = pos.distance_to_right(true);
-            }
+                pos.distance_to_right(true)
+            };
 
             if self.order.is_left_to_right() {
                 last_offset_x = last_offset_x.max(last + offset);
@@ -302,8 +301,8 @@ impl<'a> BK<'a> {
     /// a vector of edges that don't cross the strong edges (from, to).
     fn extract_edges_with_no_type2_conflict(
         &self,
-        r0: &Vec<NodeHandle>,
-        r1: &Vec<NodeHandle>,
+        r0: &[NodeHandle],
+        r1: &[NodeHandle],
     ) -> Vec<(NodeHandle, NodeHandle)> {
         let mut regular_edges: Vec<EdgeIdxs> = Vec::new();
         let mut strong_edges: Vec<EdgeIdxs> = Vec::new();
@@ -313,8 +312,7 @@ impl<'a> BK<'a> {
             for succ in self.vg.succ(*elem) {
                 // Check if and where it points to in R1. (we could have
                 // same-row self-edges).
-                if let Option::Some(idx1) = r1.iter().position(|&r| r == *succ)
-                {
+                if let Option::Some(idx1) = r1.iter().position(|&r| r == *succ) {
                     // Figure out if this is a strong edge or a regular edge.
                     let c0 = self.vg.is_connector(*elem);
                     let c1 = self.vg.is_connector(*succ);
@@ -387,13 +385,8 @@ impl<'a> BK<'a> {
     }
 
     /// \returns the index of \p elem in \p vec.
-    fn index_of(elem: NodeHandle, vec: &Vec<NodeHandle>) -> Option<usize> {
-        for i in 0..vec.len() {
-            if vec[i] == elem {
-                return Some(i);
-            }
-        }
-        None
+    fn index_of(elem: NodeHandle, vec: &[NodeHandle]) -> Option<usize> {
+        vec.iter().position(|el| el == &elem)
     }
 
     fn compute_alignment(&self, order: OrderLR) -> NodeAttachInfo {
@@ -428,13 +421,12 @@ impl<'a> BK<'a> {
 
                 // Scan the predecessors:
                 for pred in self.vg.preds(node) {
-                    let idx;
                     // Search for the index of the predecessor in the row.
-                    if let Some(idx_in_row) = Self::index_of(*pred, &r0) {
-                        idx = idx_in_row;
+                    let idx = if let Some(idx_in_row) = Self::index_of(*pred, &r0) {
+                        idx_in_row
                     } else {
                         continue;
-                    }
+                    };
 
                     // Don't mess with nodes that are taken.
                     if used[idx] {
@@ -452,8 +444,8 @@ impl<'a> BK<'a> {
                 // Mark the current node as aligned to the 'best' node on the
                 // previous line.
                 if let Some(idx) = best_idx {
-                    for i in 0..(idx + 1) {
-                        used[i] = true;
+                    for used_mark in used.iter_mut().take(i + 1) {
+                        *used_mark = true;
                     }
                     align_info.add(node, r0[idx]);
                 }
