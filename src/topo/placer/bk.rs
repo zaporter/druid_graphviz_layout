@@ -444,7 +444,7 @@ impl<'a> BK<'a> {
                 // Mark the current node as aligned to the 'best' node on the
                 // previous line.
                 if let Some(idx) = best_idx {
-                    for used_mark in used.iter_mut().take(i + 1) {
+                    for used_mark in used.iter_mut().take(idx + 1) {
                         *used_mark = true;
                     }
                     align_info.add(node, r0[idx]);
