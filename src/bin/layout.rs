@@ -40,18 +40,10 @@ fn test0(offset_x: f64, offset_y: f64, svg: &mut SVGWriter, shape_idx: usize) {
         );
 
         let sp = match shape_idx {
-            0 => {
-                ShapeKind::new_box(&i.to_string())
-            }
-            1 => {
-                ShapeKind::new_circle(&i.to_string())
-            }
-            2 => {
-                ShapeKind::new_double_circle(&i.to_string())
-            }
-            3 => {
-                generate_record()
-            }
+            0 => ShapeKind::new_box(&i.to_string()),
+            1 => ShapeKind::new_circle(&i.to_string()),
+            2 => ShapeKind::new_double_circle(&i.to_string()),
+            3 => generate_record(),
             _ => {
                 panic!("Invalid test number");
             }
@@ -105,7 +97,12 @@ fn test1(offset_x: f64, offset_y: f64, svg: &mut SVGWriter) {
     render::render_arrow(svg, LAYOUT_HELPER, &vec[..], &stl);
 }
 
-fn test3(offset_x: f64, offset_y: f64, offset_x_other: f64, svg: &mut SVGWriter) {
+fn test3(
+    offset_x: f64,
+    offset_y: f64,
+    offset_x_other: f64,
+    svg: &mut SVGWriter,
+) {
     let sz = Point::new(400., 50.);
 
     let sp0 = ShapeKind::new_box("one");
@@ -135,7 +132,12 @@ fn test3(offset_x: f64, offset_y: f64, offset_x_other: f64, svg: &mut SVGWriter)
     render::render_arrow(svg, LAYOUT_HELPER, &vec[..], &stl);
 }
 
-fn test4(offset_x: f64, offset_y: f64, offset_x_other: f64, svg: &mut SVGWriter) {
+fn test4(
+    offset_x: f64,
+    offset_y: f64,
+    offset_x_other: f64,
+    svg: &mut SVGWriter,
+) {
     let sz = Point::new(400., 50.);
 
     let sp0 = ShapeKind::new_circle("one");

@@ -34,14 +34,8 @@ impl CLIOptions {
 
 fn generate_svg(graph: &mut VisualGraph, options: CLIOptions) {
     let mut svg = SVGWriter::new();
-    graph.prepare_render(
-        options.disable_opt,
-        options.disable_layout,
-    );
-    graph.render(
-        options.debug_mode,
-        &mut svg,
-    );
+    graph.prepare_render(options.disable_opt, options.disable_layout);
+    graph.render(options.debug_mode, &mut svg);
     let content = svg.finalize();
 
     let res = save_to_file(&options.output_path, &content);

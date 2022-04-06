@@ -312,7 +312,8 @@ impl<'a> BK<'a> {
             for succ in self.vg.succ(*elem) {
                 // Check if and where it points to in R1. (we could have
                 // same-row self-edges).
-                if let Option::Some(idx1) = r1.iter().position(|&r| r == *succ) {
+                if let Option::Some(idx1) = r1.iter().position(|&r| r == *succ)
+                {
                     // Figure out if this is a strong edge or a regular edge.
                     let c0 = self.vg.is_connector(*elem);
                     let c1 = self.vg.is_connector(*succ);
@@ -422,11 +423,12 @@ impl<'a> BK<'a> {
                 // Scan the predecessors:
                 for pred in self.vg.preds(node) {
                     // Search for the index of the predecessor in the row.
-                    let idx = if let Some(idx_in_row) = Self::index_of(*pred, &r0) {
-                        idx_in_row
-                    } else {
-                        continue;
-                    };
+                    let idx =
+                        if let Some(idx_in_row) = Self::index_of(*pred, &r0) {
+                            idx_in_row
+                        } else {
+                            continue;
+                        };
 
                     // Don't mess with nodes that are taken.
                     if used[idx] {

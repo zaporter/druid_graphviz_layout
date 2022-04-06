@@ -8,11 +8,16 @@ use crate::std_shapes::shapes::*;
 
 /// Return the height and width of the record, depending on the geometry and
 /// internal text.
-fn get_record_size(rec: &RecordDef, dir: Orientation, font_size: usize) -> Point {
+fn get_record_size(
+    rec: &RecordDef,
+    dir: Orientation,
+    font_size: usize,
+) -> Point {
     match rec {
-        RecordDef::Text(label, _) => {
-            pad_shape_scalar(get_size_for_str(label, font_size), BOX_SHAPE_PADDING)
-        }
+        RecordDef::Text(label, _) => pad_shape_scalar(
+            get_size_for_str(label, font_size),
+            BOX_SHAPE_PADDING,
+        ),
         RecordDef::Array(arr) => {
             let mut x: f64 = 0.;
             let mut y: f64 = 0.;
@@ -38,9 +43,16 @@ const CIRCLE_SHAPE_PADDING: f64 = 20.;
 /// X and the Y of the shape the same. This will turn ellipses into circles and
 /// rectangles into boxes. The parameter \p dir specifies the direction of the
 /// graph. This tells us if we need to draw records left to right or top down.
-pub fn get_shape_size(dir: Orientation, s: &ShapeKind, font: usize, make_xy_same: bool) -> Point {
+pub fn get_shape_size(
+    dir: Orientation,
+    s: &ShapeKind,
+    font: usize,
+    make_xy_same: bool,
+) -> Point {
     let mut res = match s {
-        ShapeKind::Box(text) => pad_shape_scalar(get_size_for_str(text, font), BOX_SHAPE_PADDING),
+        ShapeKind::Box(text) => {
+            pad_shape_scalar(get_size_for_str(text, font), BOX_SHAPE_PADDING)
+        }
         ShapeKind::Circle(text) => {
             pad_shape_scalar(get_size_for_str(text, font), CIRCLE_SHAPE_PADDING)
         }
@@ -52,7 +64,10 @@ pub fn get_shape_size(dir: Orientation, s: &ShapeKind, font: usize, make_xy_same
         }
         ShapeKind::Connector(text) => {
             if let Option::Some(text) = text {
-                pad_shape_scalar(get_size_for_str(text, font), BOX_SHAPE_PADDING)
+                pad_shape_scalar(
+                    get_size_for_str(text, font),
+                    BOX_SHAPE_PADDING,
+                )
             } else {
                 Point::new(1., 1.)
             }
@@ -83,7 +98,13 @@ fn get_record_port_location(
 
     impl RecordVisitor for Locator {
         fn handle_box(&mut self, _loc: Point, _size: Point) {}
-        fn handle_text(&mut self, loc: Point, size: Point, _label: &str, port: &Option<String>) {
+        fn handle_text(
+            &mut self,
+            loc: Point,
+            size: Point,
+            _label: &str,
+            port: &Option<String>,
+        ) {
             if let Option::Some(port_name) = port {
                 if *port_name == self.port_name {
                     self.loc = loc;
@@ -134,7 +155,13 @@ fn render_record(
                 self.clip_handle,
             );
         }
-        fn handle_text(&mut self, loc: Point, _size: Point, label: &str, _port: &Option<String>) {
+        fn handle_text(
+            &mut self,
+            loc: Point,
+            _size: Point,
+            label: &str,
+            _port: &Option<String>,
+        ) {
             self.canvas.draw_text(loc, label, &self.look);
         }
     }
@@ -160,7 +187,13 @@ fn render_record(
 
 pub trait RecordVisitor {
     fn handle_box(&mut self, loc: Point, size: Point);
-    fn handle_text(&mut self, loc: Point, size: Point, label: &str, port: &Option<String>);
+    fn handle_text(
+        &mut self,
+        loc: Point,
+        size: Point,
+        label: &str,
+        port: &Option<String>,
+    );
 }
 
 fn visit_record(
@@ -205,7 +238,14 @@ fn visit_record(
                 for i in 0..sizes.len() {
                     let element = &arr[i];
                     let loc2 = Point::new(startx + sizes[i].x / 2., loc.y);
-                    visit_record(element, dir.flip(), loc2, sizes[i], look, visitor);
+                    visit_record(
+                        element,
+                        dir.flip(),
+                        loc2,
+                        sizes[i],
+                        look,
+                        visitor,
+                    );
                     startx += sizes[i].x;
                 }
             } else {
@@ -215,7 +255,14 @@ fn visit_record(
                 for i in 0..sizes.len() {
                     let element = &arr[i];
                     let loc2 = Point::new(loc.x, starty + sizes[i].y / 2.);
-                    visit_record(element, dir.flip(), loc2, sizes[i], look, visitor);
+                    visit_record(
+                        element,
+                        dir.flip(),
+                        loc2,
+                        sizes[i],
+                        look,
+                        visitor,
+                    );
                     starty += sizes[i].y;
                 }
             }
@@ -229,7 +276,12 @@ impl Renderable for Element {
             // Draw the pink bounding box.
             let debug_look = StyleAttr::debug0();
             let bb = self.pos.bbox(true);
-            canvas.draw_rect(bb.0, self.pos.size(true), &debug_look, Option::None);
+            canvas.draw_rect(
+                bb.0,
+                self.pos.size(true),
+                &debug_look,
+                Option::None,
+            );
         }
 
         match &self.shape {
@@ -254,11 +306,19 @@ impl Renderable for Element {
                 canvas.draw_text(self.pos.center(), text.as_str(), &self.look);
             }
             ShapeKind::Circle(text) => {
-                canvas.draw_circle(self.pos.center(), self.pos.size(false), &self.look);
+                canvas.draw_circle(
+                    self.pos.center(),
+                    self.pos.size(false),
+                    &self.look,
+                );
                 canvas.draw_text(self.pos.center(), text.as_str(), &self.look);
             }
             ShapeKind::DoubleCircle(text) => {
-                canvas.draw_circle(self.pos.center(), self.pos.size(false), &self.look);
+                canvas.draw_circle(
+                    self.pos.center(),
+                    self.pos.size(false),
+                    &self.look,
+                );
                 canvas.draw_circle(
                     self.pos.center(),
                     self.pos.size(false).sub(Point::splat(15.)),
@@ -288,7 +348,11 @@ impl Renderable for Element {
             }
         }
         if debug {
-            canvas.draw_circle(self.pos.center(), Point::new(6., 6.), &StyleAttr::debug2());
+            canvas.draw_circle(
+                self.pos.center(),
+                Point::new(6., 6.),
+                &StyleAttr::debug2(),
+            );
         }
     }
 
@@ -340,7 +404,12 @@ impl Renderable for Element {
         }
     }
 
-    fn get_passthrough_path(&self, _from: Point, _to: Point, _force: f64) -> (Point, Point) {
+    fn get_passthrough_path(
+        &self,
+        _from: Point,
+        _to: Point,
+        _force: f64,
+    ) -> (Point, Point) {
         let loc = self.pos.center();
         let size = self.pos.size(false);
         if let ShapeKind::Connector(_) = self.shape {
@@ -358,7 +427,8 @@ pub fn generate_curve_for_elements(
 ) -> Vec<(Point, Point)> {
     let mut path: Vec<(Point, Point)> = Vec::new();
     let to_loc = elements[1].position().center();
-    let from_con = elements[0].get_connector_location(to_loc, force, &arrow.src_port);
+    let from_con =
+        elements[0].get_connector_location(to_loc, force, &arrow.src_port);
 
     let mut prev_exit_loc = from_con.0;
 
@@ -370,7 +440,11 @@ pub fn generate_curve_for_elements(
 
         if is_last {
             let to = &elements[i];
-            to_con = to.get_connector_location(prev_exit_loc, force, &arrow.dst_port);
+            to_con = to.get_connector_location(
+                prev_exit_loc,
+                force,
+                &arrow.dst_port,
+            );
             prev_exit_loc = to_con.0;
         } else {
             let center = &elements[i];
