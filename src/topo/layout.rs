@@ -27,7 +27,7 @@ pub struct VisualGraph {
     // The arrows and the list of elements that they visits.
     edges: Vec<(Arrow, Vec<NodeHandle>)>,
     // Contains a list of self-edges. We use this as a temporary storage during
-    // lowering. This list should be removes by the time we start the layout
+    // lowering. This list should be removes by the time we start the druid_graphviz_layout
     // process.
     self_edges: Vec<(Arrow, NodeHandle)>,
     // Representing the connections between the nodes. Used to keep the graph
@@ -134,9 +134,9 @@ impl VisualGraph {
 }
 
 impl VisualGraph {
-    pub fn prepare_render(&mut self, disable_opt: bool, disable_layout: bool) {
+    pub fn prepare_render(&mut self, disable_opt: bool, disable_druid_graphviz_layout: bool) {
         self.lower(disable_opt);
-        Placer::new(self).layout(disable_layout);
+        Placer::new(self).druid_graphviz_layout(disable_druid_graphviz_layout);
     }
 
     fn lower(&mut self, disable_optimizations: bool) {

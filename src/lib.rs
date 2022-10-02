@@ -17,7 +17,7 @@ This crate provides an API for parsing DOT files. For example,
 to load, parse and print the AST:
 
 ```rust
-    use layout::gv;
+    use druid_graphviz_layout::gv;
     use std::fs;
 
     let contents = "digraph { a -> b [label=\"foo\"]; }";
@@ -57,14 +57,14 @@ code builds a graph with two nodes that are connected with an edge.
 
 ```rust
 fn simple_graph() {
-    use layout::backends::svg::SVGWriter;
-    use layout::core::base::Orientation;
-    use layout::core::geometry::Point;
-    use layout::core::style::*;
-    use layout::core::utils::save_to_file;
-    use layout::std_shapes::shapes::*;
-    use layout::topo::layout::VisualGraph;
-    use layout::topo::placer::Placer;
+    use druid_graphviz_layout::backends::svg::SVGWriter;
+    use druid_graphviz_layout::core::base::Orientation;
+    use druid_graphviz_layout::core::geometry::Point;
+    use druid_graphviz_layout::core::style::*;
+    use druid_graphviz_layout::core::utils::save_to_file;
+    use druid_graphviz_layout::std_shapes::shapes::*;
+    use druid_graphviz_layout::topo::layout::VisualGraph;
+    use druid_graphviz_layout::topo::placer::Placer;
     use std::fs;
 
     // Create a new graph:
@@ -90,7 +90,8 @@ fn simple_graph() {
 
     // Render the nodes to some rendering backend.
     let mut svg = SVGWriter::new();
-    vg.do_it(false, false, false, &mut svg);
+    vg.prepare_render(false,false);
+    vg.render(false,&mut svg);
 
     // Save the output.
     let _ = save_to_file("/tmp/graph.svg", &svg.finalize());

@@ -16,7 +16,7 @@ use std::collections::HashMap;
 type PropertyList = HashMap<String, String>;
 
 // The methods in this file are responsible for converting the parsed Graphviz
-// AST into the VisualGraph data-structure that we use for layout and rendering
+// AST into the VisualGraph data-structure that we use for druid_graphviz_layout and rendering
 // of the graph.
 
 struct EdgeDesc {

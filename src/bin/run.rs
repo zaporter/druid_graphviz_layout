@@ -8,15 +8,15 @@ extern crate log;
 use clap::{App, Arg};
 use gv::parser::DotParser;
 use gv::GraphBuilder;
-use layout::backends::svg::SVGWriter;
-use layout::core::utils::save_to_file;
-use layout::gv;
-use layout::topo::layout::VisualGraph;
+use druid_graphviz_layout::backends::svg::SVGWriter;
+use druid_graphviz_layout::core::utils::save_to_file;
+use druid_graphviz_layout::gv;
+use druid_graphviz_layout::topo::layout::VisualGraph;
 use std::fs;
 
 struct CLIOptions {
     disable_opt: bool,
-    disable_layout: bool,
+    disable_druid_graphviz_layout: bool,
     output_path: String,
     debug_mode: bool,
 }
@@ -25,7 +25,7 @@ impl CLIOptions {
     pub fn new() -> Self {
         Self {
             disable_opt: false,
-            disable_layout: false,
+            disable_druid_graphviz_layout: false,
             output_path: String::new(),
             debug_mode: false,
         }
@@ -34,7 +34,7 @@ impl CLIOptions {
 
 fn generate_svg(graph: &mut VisualGraph, options: CLIOptions) {
     let mut svg = SVGWriter::new();
-    graph.prepare_render(options.disable_opt, options.disable_layout);
+    graph.prepare_render(options.disable_opt, options.disable_druid_graphviz_layout);
     graph.render(options.debug_mode, &mut svg);
     let content = svg.finalize();
 
@@ -57,9 +57,9 @@ fn main() {
                 .help("Enables debug options"),
         )
         .arg(
-            Arg::with_name("no-layout")
-                .long("no-layout")
-                .help("Disable the node layout pass"),
+            Arg::with_name("no-druid_graphviz_layout")
+                .long("no-druid_graphviz_layout")
+                .help("Disable the node druid_graphviz_layout pass"),
         )
         .arg(
             Arg::with_name("no-optz")
@@ -95,7 +95,7 @@ fn main() {
     let mut cli = CLIOptions::new();
     cli.debug_mode = matches.occurrences_of("d") != 0;
     cli.disable_opt = matches.occurrences_of("no-optz") != 0;
-    cli.disable_layout = matches.occurrences_of("no-layout") != 0;
+    cli.disable_druid_graphviz_layout = matches.occurrences_of("no-druid_graphviz_layout") != 0;
     cli.output_path = matches
         .value_of("output")
         .unwrap_or("/tmp/out.svg")

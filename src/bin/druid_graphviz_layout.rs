@@ -1,16 +1,16 @@
 //! This is a sample program that prints a bunch of elements to an SVG file so
 //! we can visually see if the things that we render look right.
 
-use layout::backends::svg::SVGWriter;
-use layout::core::base::Orientation;
-use layout::core::color::Color;
-use layout::core::format::{RenderBackend, Renderable, Visible};
-use layout::core::geometry::{segment_rect_intersection, Point};
-use layout::core::style::{LineStyleKind, StyleAttr};
-use layout::core::utils::save_to_file;
-use layout::std_shapes::render;
-use layout::std_shapes::render::get_shape_size;
-use layout::std_shapes::shapes::*;
+use druid_graphviz_layout::backends::svg::SVGWriter;
+use druid_graphviz_layout::core::base::Orientation;
+use druid_graphviz_layout::core::color::Color;
+use druid_graphviz_layout::core::format::{RenderBackend, Renderable, Visible};
+use druid_graphviz_layout::core::geometry::{segment_rect_intersection, Point};
+use druid_graphviz_layout::core::style::{LineStyleKind, StyleAttr};
+use druid_graphviz_layout::core::utils::save_to_file;
+use druid_graphviz_layout::std_shapes::render;
+use druid_graphviz_layout::std_shapes::render::get_shape_size;
+use druid_graphviz_layout::std_shapes::shapes::*;
 
 pub const LAYOUT_HELPER: bool = true;
 

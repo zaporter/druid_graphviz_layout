@@ -39,6 +39,6 @@ Support for Records (nested structures):
 
 ![](docs/records.png)
 
-Debug-mode rendering that helps to visualize the layout decisions:
+Debug-mode rendering that helps to visualize the druid_graphviz_layout decisions:
 
 ![](docs/debug.png)

@@ -1,13 +1,13 @@
 [package]
-name = "layout"
+name = "druid_graphviz_layout"
 version = "0.1.0"
-authors = ["Nadav Rotem <nadav256@gmail.com>"]
+authors = ["Zaporter, Nadav Rotem <nadav256@gmail.com>"]
 edition = "2018"
 description = "A graph visualization program"
 keywords = ["visualization", "svg", "render", "dot", "graphviz"]
 
 [[bin]]
-name = "layout"
+name = "druid_graphviz_layout"
 test = false
 bench = false
 

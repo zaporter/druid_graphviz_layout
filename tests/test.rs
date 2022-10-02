@@ -1,15 +1,15 @@
-use layout::core::geometry::Point;
+use druid_graphviz_layout::core::geometry::Point;
 
 #[cfg(test)]
 mod tests {
 
-    use layout::core::geometry::weighted_median;
-    use layout::gv::record::parse_record_string;
-    use layout::gv::record::print_record;
-    use layout::gv::DotParser;
-    use layout::gv::Lexer;
-    use layout::gv::Token;
-    use layout::std_shapes::shapes::RecordDef;
+    use druid_graphviz_layout::core::geometry::weighted_median;
+    use druid_graphviz_layout::gv::record::parse_record_string;
+    use druid_graphviz_layout::gv::record::print_record;
+    use druid_graphviz_layout::gv::DotParser;
+    use druid_graphviz_layout::gv::Lexer;
+    use druid_graphviz_layout::gv::Token;
+    use druid_graphviz_layout::std_shapes::shapes::RecordDef;
 
     fn is_identifier(t: Token, target: &str) -> bool {
         match t {

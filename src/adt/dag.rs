@@ -426,7 +426,7 @@ impl DAG {
         let mut levels: Vec<usize> = Vec::new();
         assert_eq!(order.len(), self.nodes.len());
 
-        // Levels has the same layout as the DAG node list.
+        // Levels has the same druid_graphviz_layout as the DAG node list.
         levels.resize(self.nodes.len(), 0);
 
         // For each node in the order (starting with a node of level zero).

@@ -19,10 +19,10 @@ impl<'a> Placer<'a> {
         Self { vg }
     }
 
-    pub fn layout(&mut self, no_layout: bool) {
-        log::info!("Starting layout of {} nodes. ", self.vg.num_nodes());
+    pub fn druid_graphviz_layout(&mut self, no_druid_graphviz_layout: bool) {
+        log::info!("Starting druid_graphviz_layout of {} nodes. ", self.vg.num_nodes());
 
-        // We implement left-to-right layout by transposing the graph.
+        // We implement left-to-right druid_graphviz_layout by transposing the graph.
         let need_transpose = !self.vg.orientation().is_top_to_bottom();
         if need_transpose {
             log::info!("Placing nodes in Left-to-right mode.");
@@ -41,8 +41,8 @@ impl<'a> Placer<'a> {
         // rank.
         verifier::do_it(self.vg);
 
-        if no_layout {
-            log::info!("Skipping the layout phase.");
+        if no_druid_graphviz_layout {
+            log::info!("Skipping the druid_graphviz_layout phase.");
             // Finalize left-to-right graphs.
             if need_transpose {
                 self.vg.transpose();
