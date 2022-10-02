@@ -2,7 +2,7 @@
 name = "druid_graphviz_layout"
 version = "0.1.0"
 authors = ["Zaporter, Nadav Rotem <nadav256@gmail.com>"]
-edition = "2018"
+edition = "2021"
 description = "A graph visualization program"
 keywords = ["visualization", "svg", "render", "dot", "graphviz"]
 
@@ -22,3 +22,11 @@ bench = false
 clap = "2.27.1"
 log = "0.4.14"
 env_logger = "0.9"
+druid = {git="https://github.com/linebender/druid"}
+
+
+[[example]]
+name = "basic"
+
+[[example]]
+name = "custom_widget"

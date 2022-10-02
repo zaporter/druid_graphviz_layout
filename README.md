@@ -3,6 +3,10 @@
 Layout is a rust library and a stand alone utility that draws graphs. Layout
 can parse Graphviz dot files and render them.
 
+## Note
+This uses druid directly from github which means this is subject to break at 
+any time. Once druid 0.8 comes out, I will pin to that 
+
 ## Getting started
 
 Build the crate and render some dot files with the command
