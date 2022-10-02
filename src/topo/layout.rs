@@ -6,6 +6,8 @@
 
 extern crate log;
 
+use druid::Data;
+
 use crate::adt::dag::*;
 use crate::core::base::Orientation;
 use crate::core::format::RenderBackend;

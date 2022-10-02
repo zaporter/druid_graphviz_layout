@@ -27,6 +27,3 @@ druid = {git="https://github.com/linebender/druid"}
 
 [[example]]
 name = "basic"
-
-[[example]]
-name = "custom_widget"

@@ -1,229 +1,200 @@
 //! SVG rendering backend that accepts draw calls and saves the output to a file.
 
+
 use crate::core::color::Color;
 use crate::core::format::{ClipHandle, RenderBackend};
 use crate::core::geometry::Point;
 use crate::core::style::StyleAttr;
 use std::collections::HashMap;
 use std::fmt::Write;
+use std::rc::Rc;
 
-static SVG_HAEDER: &str =
-    r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>"#;
+use druid::kurbo::{Ellipse, BezPath};
+use druid::{
+    kurbo::{Circle, Shape, Line, RoundedRect},
+    widget::Label,
+    BoxConstraints, Data, Env, Event, EventCtx, LayoutCtx, Lens, LifeCycle, LifeCycleCtx,
+    PaintCtx, RenderContext, Size, UpdateCtx, Widget, WidgetPod, Vec2, MouseButton, piet::{TextLayoutBuilder, Text, TextAttribute}, RadialGradient, LinearGradient, UnitPoint,
+};
 
-static SVG_DEFS: &str = r#"<defs>
-<marker id="startarrow" markerWidth="10" markerHeight="7"
-refX="0" refY="3.5" orient="auto">
-<polygon points="10 0, 10 7, 0 3.5" />
-</marker>
-<marker id="endarrow" markerWidth="10" markerHeight="7"
-refX="10" refY="3.5" orient="auto">
-<polygon points="0 0, 10 3.5, 0 7" />
-</marker>
-
-</defs>"#;
-
-static SVG_FOOTER: &str = "</svg>";
-
-fn escape_string(x: &str) -> String {
-    let mut res = String::new();
-    for c in x.chars() {
-        match c {
-            '&' => {
-                res.push_str("&amp;");
-            }
-            '<' => {
-                res.push_str("&lt;");
-            }
-            '>' => {
-                res.push_str("&gt;");
-            }
-            '"' => {
-                res.push_str("&quot;");
-            }
-            '\'' => {
-                res.push_str("&apos;");
-            }
-            _ => {
-                res.push(c);
-            }
-        }
-    }
-    res
-}
-
-pub struct SVGWriter {
-    content: String,
+pub struct DruidCtxWriter {
+    rects: Vec<DrawRectInfo>,
+    circles: Vec<DrawCircleInfo>,
+    texts: Vec<DrawTextInfo>,
+    arrows: Vec<DrawArrowInfo>,
+    lines: Vec<DrawLineInfo>,
+    clips: HashMap<ClipHandle, ClipInfo>,
     view_size: Point,
-    counter: usize,
-    // Maps font sizes to their class name and class impl.
-    font_style_map: HashMap<usize, (String, String)>,
-    // A list of clip regions to generate.
-    clip_regions: Vec<String>,
 }
 
-impl SVGWriter {
-    pub fn new() -> SVGWriter {
-        SVGWriter {
-            content: String::new(),
-            view_size: Point::zero(),
-            counter: 0,
-            font_style_map: HashMap::new(),
-            clip_regions: Vec::new(),
+struct DrawRectInfo {
+    xy: Point,
+    size: Point,
+    look: StyleAttr,
+    clip: Option<ClipHandle>,
+}
+
+struct DrawCircleInfo {
+    xy: Point,
+    size: Point,
+    look: StyleAttr,
+}
+
+struct DrawTextInfo {
+    xy: Point,
+    text: String,
+    look: StyleAttr,
+}
+
+struct DrawArrowInfo {
+    paths: Vec<(Point, Point)>,
+    dashed: bool,
+    head: (bool, bool),
+    look: StyleAttr,
+    text: String,
+}
+
+struct DrawLineInfo {
+    start: Point,
+    stop: Point,
+    look: StyleAttr,
+}
+struct ClipInfo {
+    xy: Point,
+    size: Point,
+    rounded_px: usize,
+}
+
+impl DruidCtxWriter {
+    pub fn new() -> Self {
+        Self {
+            rects: Vec::new(),
+            circles: Vec::new(),
+            texts: Vec::new(),
+            arrows: Vec::new(),
+            lines: Vec::new(),
+            clips: HashMap::new(),
+            view_size: Point { x: 0., y: 0. },
         }
     }
 }
 
-impl Default for SVGWriter {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-// This trivial implementation of `drop` adds a print to a file.
-impl Drop for SVGWriter {
-    fn drop(&mut self) {}
-}
-
-impl SVGWriter {
+impl DruidCtxWriter {
     // Grow the viewable svg window to include the point \p point plus some
     // offset \p size.
     fn grow_window(&mut self, point: Point, size: Point) {
         self.view_size.x = self.view_size.x.max(point.x + size.x + 5.);
         self.view_size.y = self.view_size.y.max(point.y + size.y + 5.);
     }
-
-    // Gets or creates a font 'class' for the parameters. Returns the class
-    // name.
-    fn get_or_create_font_style(&mut self, font_size: usize) -> String {
-        if let Option::Some(x) = self.font_style_map.get(&font_size) {
-            return x.0.clone();
+    fn scale_pt(p:Point, max_vs:f64, window_size: &Size)->Point{
+        Point{
+            x: (p.x/max_vs)*window_size.width,
+            y: (p.y/max_vs)*window_size.height,
         }
-        let class_name = format!("a{}", font_size);
-        let class_impl = format!(
-            ".a{} {{ font-size: {}px; font-family: Times, serif; }}",
-            font_size, font_size
-        );
-        let impl_ = (class_name.clone(), class_impl);
-        self.font_style_map.insert(font_size, impl_);
-        class_name
     }
+    pub fn write(&self, ctx: &mut PaintCtx, window_size: Size) {
+        let max_vs = self.view_size.x.max(self.view_size.y);
 
-    fn emit_svg_font_styles(&self) -> String {
-        let mut content = String::new();
-        content.push_str("<style>\n");
-        for p in self.font_style_map.iter() {
-            content.push_str(&p.1 .1);
-            content.push('\n');
+        for elem in &self.rects {
+            let sx = (elem.xy.x / max_vs) * window_size.width;
+            let ex = ((elem.xy.x + elem.size.x) / max_vs) * window_size.width;
+            let sy = (elem.xy.y / max_vs) * window_size.height;
+            let ey = ((elem.xy.y + elem.size.y) / max_vs) * window_size.height;
+            ctx.fill(RoundedRect::new(sx, sy, ex, ey, 10.0), &druid::Color::WHITE);
+            ctx.stroke(RoundedRect::new(sx, sy, ex, ey, 10.0), &druid::Color::BLACK,1.0);
         }
-        content.push_str("</style>\n");
-        for p in self.clip_regions.iter() {
-            content.push_str(p);
-            content.push('\n');
+
+        for elem in &self.circles {
+            let sx = (elem.xy.x / max_vs) * window_size.width;
+            let sizex = ((elem.size.x) / max_vs) * window_size.width;
+            let sy = (elem.xy.y / max_vs) * window_size.height;
+            let sizey = ((elem.size.y) / max_vs) * window_size.height;
+            ctx.fill(
+                Ellipse::new(
+                    druid::Point::new(sx, sy),
+                    druid::Vec2::new(sizex, sizey),
+                    0.,
+                ),
+                &druid::Color::RED,
+            );
         }
-        content
-    }
+        for elem in &self.lines {
+            let sx = (elem.start.x / max_vs) * window_size.width;
+            let sy = (elem.start.y / max_vs) * window_size.height;
+            let ex = (elem.stop.x / max_vs) * window_size.width;
+            let ey = (elem.stop.y / max_vs) * window_size.height;
+            ctx.stroke(
+                Line::new(druid::Point::new(sx, sy), druid::Point::new(ex, ey)),
+                &druid::Color::GREEN,
+                10.0,
+            );
+        }
+        for elem in &self.arrows {
+            let mut paths = elem.paths.iter();
+            let mut bpath = BezPath::new();
+            let first = paths.next().unwrap();
+            let second = paths.next().unwrap();
+            let m = Self::scale_pt(first.0, max_vs, &window_size);
+            let c1 = Self::scale_pt(first.1, max_vs, &window_size);
+            let c2 = Self::scale_pt(second.0, max_vs, &window_size);
+            let c3 = Self::scale_pt(second.1, max_vs, &window_size);
+            bpath.move_to(druid::Point::new(m.x, m.y));
+            // TODO
+            //https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths#curve_c
+            //https://docs.rs/druid/latest/druid/piet/kurbo/struct.BezPath.html
+            // THIS IS NOT CORRECT
+            bpath.line_to(druid::Point::new(c3.x,c3.y));
+            // bpath.curve_to(
+            //     druid::Point::new(c1.x, c1.x),
+            //     druid::Point::new(c2.x, c2.y),
+            //     druid::Point::new(c3.x, c3.y),
+            // );
+            while let Some((p1,p2)) = paths.next(){
+                let p1 = Self::scale_pt(*p1, max_vs, &window_size);
+                let p2 = Self::scale_pt(*p2, max_vs, &window_size);
+                bpath.quad_to(druid::Point::new(p1.x,p1.y), druid::Point::new(p2.x,p2.y));
+            }
+            ctx.stroke(bpath, &druid::Color::GREEN, 10.0);
+        }
+        for elem in &self.texts {
+            let p = Self::scale_pt(elem.xy, max_vs, &window_size);
 
-    pub fn finalize(&self) -> String {
-        let mut result = String::new();
-        result.push_str(SVG_HAEDER);
-
-        let svg_line = format!(
-            "<svg width=\"{}\" height=\"{}\" viewBox=\"0 0 {} {}\
-            \" xmlns=\"http://www.w3.org/2000/svg\">\n",
-            self.view_size.x,
-            self.view_size.y,
-            self.view_size.x,
-            self.view_size.y
-        );
-        result.push_str(&svg_line);
-        result.push_str(SVG_DEFS);
-        result.push_str(&self.emit_svg_font_styles());
-        result.push_str(&self.content);
-        result.push_str(SVG_FOOTER);
-        result
+            let text = ctx.text();
+            let to_draw = text.new_text_layout(elem.text.clone())
+                .default_attribute(TextAttribute::FontSize(14.0))
+                .build().unwrap();
+            
+            ctx.draw_text(&to_draw, druid::Point::new(p.x,p.y));
+        }
     }
 }
-impl RenderBackend for SVGWriter {
-    fn draw_rect(
-        &mut self,
-        xy: Point,
-        size: Point,
-        look: &StyleAttr,
-        clip: Option<ClipHandle>,
-    ) {
+impl RenderBackend for DruidCtxWriter {
+    fn draw_rect(&mut self, xy: Point, size: Point, look: &StyleAttr, clip: Option<ClipHandle>) {
         self.grow_window(xy, size);
-
-        let mut clip_option = String::new();
-        if let Option::Some(clip_id) = clip {
-            clip_option = format!("clip-path=\"url(#C{})\"", clip_id);
-        }
-
-        let fill_color = look.fill_color.unwrap_or_else(Color::transparent);
-        let stroke_width = look.line_width;
-        let stroke_color = look.line_color;
-        let rounded_px = look.rounded;
-        let line1 = format!(
-            "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" fill=\"{}\" 
-            stroke-width=\"{}\" stroke=\"{}\" rx=\"{}\" {} />\n",
-            xy.x,
-            xy.y,
-            size.x,
-            size.y,
-            fill_color.to_web_color(),
-            stroke_width,
-            stroke_color.to_web_color(),
-            rounded_px,
-            clip_option
-        );
-        self.content.push_str(&line1);
+        self.rects.push(DrawRectInfo {
+            xy,
+            size,
+            look: look.clone(),
+            clip,
+        });
     }
 
     fn draw_circle(&mut self, xy: Point, size: Point, look: &StyleAttr) {
         self.grow_window(xy, size);
-        let fill_color = look.fill_color.unwrap_or_else(Color::transparent);
-        let stroke_width = look.line_width;
-        let stroke_color = look.line_color;
-
-        let line1 = format!(
-            "<ellipse cx=\"{}\" cy=\"{}\" rx=\"{}\" ry=\"{}\" fill=\"{}\" 
-            stroke-width=\"{}\" stroke=\"{}\"/>\n",
-            xy.x,
-            xy.y,
-            size.x / 2.,
-            size.y / 2.,
-            fill_color.to_web_color(),
-            stroke_width,
-            stroke_color.to_web_color()
-        );
-        self.content.push_str(&line1);
+        self.circles.push(DrawCircleInfo {
+            xy,
+            size,
+            look: look.clone(),
+        });
     }
 
     fn draw_text(&mut self, xy: Point, text: &str, look: &StyleAttr) {
-        let len = text.len();
-
-        let font_class = self.get_or_create_font_style(look.font_size);
-
-        let mut content = String::new();
-        let cnt = 1 + text.lines().count();
-        let size_y = (cnt * look.font_size) as f64;
-        for line in text.lines() {
-            write!(&mut content, "<tspan x = \"{}\" dy=\"1.0em\">", xy.x)
-                .unwrap();
-            content.push_str(&escape_string(line));
-            content.push_str("</tspan>");
-        }
-
-        self.grow_window(xy, Point::new(10., len as f64 * 10.));
-        let line = format!(
-            "<text dominant-baseline=\"middle\" text-anchor=\"middle\" 
-            x=\"{}\" y=\"{}\" class=\"{}\">{}</text>",
-            xy.x,
-            xy.y - size_y / 2.,
-            font_class,
-            &content
-        );
-
-        self.content.push_str(&line);
+        // TODO grow window?
+        self.texts.push(DrawTextInfo {
+            xy,
+            text: text.to_owned(),
+            look: look.clone(),
+        });
     }
 
     fn draw_arrow(
@@ -237,118 +208,37 @@ impl RenderBackend for SVGWriter {
         look: &StyleAttr,
         text: &str,
     ) {
-        // Control points as defined in here:
-        // https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths#curve_commands
-        // Structured as [(M,C) S S S ...]
         for point in path {
             self.grow_window(point.0, Point::zero());
             self.grow_window(point.1, Point::zero());
         }
-
-        let dash = if dashed {
-            "stroke-dasharray=\"5,5\""
-        } else {
-            ""
-        };
-        let start = if head.0 {
-            "marker-start=\"url(#startarrow)\""
-        } else {
-            ""
-        };
-        let end = if head.1 {
-            "marker-end=\"url(#endarrow)\""
-        } else {
-            ""
-        };
-
-        let mut path_builder = String::new();
-
-        // Handle the "exit vector" from the first point.
-        write!(
-            &mut path_builder,
-            "M {} {} C {} {}, {} {}, {} {} ",
-            path[0].0.x,
-            path[0].0.y,
-            path[0].1.x,
-            path[0].1.y,
-            path[1].0.x,
-            path[1].0.y,
-            path[1].1.x,
-            path[1].1.y
-        )
-        .unwrap();
-
-        // Handle the "entry vector" from the rest of the points.
-        for point in path.iter().skip(2) {
-            write!(
-                &mut path_builder,
-                "S {} {}, {} {} ",
-                point.0.x, point.0.y, point.1.x, point.1.y
-            )
-            .unwrap();
-        }
-
-        let stroke_width = look.line_width;
-        let stroke_color = look.line_color;
-
-        let line = format!(
-            "<path id=\"arrow{}\" d=\"{}\" \
-            stroke=\"{}\" stroke-width=\"{}\" {} {} {} 
-            fill=\"transparent\" />\n",
-            self.counter,
-            path_builder.as_str(),
-            stroke_color.to_web_color(),
-            stroke_width,
-            dash,
-            start,
-            end
-        );
-        self.content.push_str(&line);
-
-        let font_class = self.get_or_create_font_style(look.font_size);
-        let line = format!(
-            "<text><textPath href=\"#arrow{}\" startOffset=\"50%\" \
-            text-anchor=\"middle\" class=\"{}\">{}</textPath></text>",
-            self.counter,
-            font_class,
-            escape_string(text)
-        );
-        self.content.push_str(&line);
-        self.counter += 1;
+        self.arrows.push(DrawArrowInfo {
+            paths: path.to_owned(),
+            dashed,
+            head,
+            look: look.clone(),
+            text: text.to_owned(),
+        });
     }
 
     fn draw_line(&mut self, start: Point, stop: Point, look: &StyleAttr) {
-        let stroke_width = look.line_width;
-        let stroke_color = look.line_color;
-        let line1 = format!(
-            "<line x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\" stroke-width=\"{}\"
-             stroke=\"{}\" />\n",
-            start.x,
-            start.y,
-            stop.x,
-            stop.y,
-            stroke_width,
-            stroke_color.to_web_color()
-        );
-        self.content.push_str(&line1);
+        self.lines.push(DrawLineInfo {
+            start,
+            stop,
+            look: look.clone(),
+        });
     }
 
-    fn create_clip(
-        &mut self,
-        xy: Point,
-        size: Point,
-        rounded_px: usize,
-    ) -> ClipHandle {
-        let handle = self.clip_regions.len();
-
-        let clip_code = format!(
-            "<clipPath id=\"C{}\"><rect x=\"{}\" y=\"{}\" \
-            width=\"{}\" height=\"{}\" rx=\"{}\" /> \
-            </clipPath>",
-            handle, xy.x, xy.y, size.x, size.y, rounded_px
+    fn create_clip(&mut self, xy: Point, size: Point, rounded_px: usize) -> ClipHandle {
+        let handle = self.clips.len();
+        self.clips.insert(
+            handle,
+            ClipInfo {
+                xy,
+                size,
+                rounded_px,
+            },
         );
-
-        self.clip_regions.push(clip_code);
 
         handle
     }
