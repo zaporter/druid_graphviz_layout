@@ -6,7 +6,9 @@
 
 use std::cmp;
 
+
 /// The Ranked-DAG data structure.
+#[derive(Clone)]
 pub struct DAG {
     /// A list of nodes in the dag.
     nodes: Vec<Node>,
@@ -36,6 +38,7 @@ impl From<usize> for NodeHandle {
     }
 }
 
+#[derive(Clone)]
 struct Node {
     // Points to other edges.
     successors: Vec<NodeHandle>,

@@ -5,6 +5,8 @@ use crate::core::color::Color;
 use crate::core::format::{ClipHandle, RenderBackend};
 use crate::core::geometry::Point;
 use crate::core::style::StyleAttr;
+use crate::topo::layout::VisualGraph;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::Write;
 use std::rc::Rc;
@@ -16,6 +18,76 @@ use druid::{
     BoxConstraints, Data, Env, Event, EventCtx, LayoutCtx, Lens, LifeCycle, LifeCycleCtx,
     PaintCtx, RenderContext, Size, UpdateCtx, Widget, WidgetPod, Vec2, MouseButton, piet::{TextLayoutBuilder, Text, TextAttribute}, RadialGradient, LinearGradient, UnitPoint,
 };
+
+pub struct GraphvizWidget;
+
+impl GraphvizWidget {
+
+    pub fn new() -> Self{
+        GraphvizWidget{}
+    }
+}
+
+impl Widget<VisualGraphData> for GraphvizWidget {
+    fn event(&mut self, _ctx: &mut EventCtx, _event: &Event, _data: &mut VisualGraphData, _env: &Env) {}
+
+    fn lifecycle(
+        &mut self,
+        _ctx: &mut LifeCycleCtx,
+        event: &LifeCycle,
+        data: &VisualGraphData,
+        _env: &Env,
+    ) {
+        if let LifeCycle::WidgetAdded = event{
+            data.graph.borrow_mut().prepare_render(false, false);
+        }
+
+    }
+
+    fn update(&mut self, ctx: &mut UpdateCtx, _old_data: &VisualGraphData, data: &VisualGraphData, _env: &Env) {
+
+        data.graph.borrow_mut().prepare_render(false, false);
+        //.into_inner().borrow_mut().prepare_render(false, false);
+        ctx.request_paint();
+    }
+
+    fn layout(
+        &mut self,
+        _layout_ctx: &mut LayoutCtx,
+        bc: &BoxConstraints,
+        _data: &VisualGraphData,
+        _env: &Env,
+    ) -> Size {
+        if bc.is_width_bounded() && bc.is_height_bounded() {
+            bc.max()
+        } else {
+            bc.constrain_aspect_ratio(1.0, 400.)
+            // let size = Size::new(100.0, 100.0);
+            // bc.constrain(size)
+        }
+    }
+
+    fn paint(&mut self, ctx: &mut PaintCtx, data: &VisualGraphData, env: &Env) {
+        let size = ctx.size();
+        let rect = size.to_rect();
+        ctx.fill(rect, &druid::Color::WHITE);
+        let mut writer = DruidCtxWriter::new();
+        data.graph.borrow().render(false,&mut writer);
+        writer.write(ctx, size);
+    }
+}
+
+#[derive(Data,Clone)]
+pub struct VisualGraphData{
+    pub graph: Rc<RefCell<VisualGraph>>
+}
+impl VisualGraphData {
+    pub fn new(graph : VisualGraph)->Self{
+        Self{
+            graph:Rc::new(RefCell::new(graph)) 
+        }
+    }
+}
 
 pub struct DruidCtxWriter {
     rects: Vec<DrawRectInfo>,
@@ -101,7 +173,7 @@ impl DruidCtxWriter {
             let sy = (elem.xy.y / max_vs) * window_size.height;
             let ey = ((elem.xy.y + elem.size.y) / max_vs) * window_size.height;
             ctx.fill(RoundedRect::new(sx, sy, ex, ey, 10.0), &druid::Color::WHITE);
-            ctx.stroke(RoundedRect::new(sx, sy, ex, ey, 10.0), &druid::Color::BLACK,1.0);
+            ctx.stroke(RoundedRect::new(sx, sy, ex, ey, 10.0), &druid::Color::BLACK, 1.0);
         }
 
         for elem in &self.circles {
