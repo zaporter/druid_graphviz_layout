@@ -22,8 +22,13 @@ bench = false
 clap = "2.27.1"
 log = "0.4.14"
 env_logger = "0.9"
-druid = {git="https://github.com/linebender/druid"}
 
+
+[dependencies.druid]
+git = "https://github.com/linebender/druid"
+rev = "fc05e965c85fced8720c655685e02478e0530e94" # update this when upgrading to newer druid
+# path = "../../projects/druid/druid"
+features = ["im"]
 
 [[example]]
 name = "basic"
