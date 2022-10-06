@@ -12,6 +12,7 @@ use std::fmt::Write;
 use std::rc::Rc;
 
 use druid::kurbo::{Ellipse, BezPath};
+use druid::piet::TextLayout;
 use druid::{
     kurbo::{Circle, Shape, Line, RoundedRect},
     widget::Label,
@@ -181,13 +182,13 @@ impl DruidCtxWriter {
             let sizex = ((elem.size.x) / max_vs) * window_size.width;
             let sy = (elem.xy.y / max_vs) * window_size.height;
             let sizey = ((elem.size.y) / max_vs) * window_size.height;
-            ctx.fill(
+            ctx.stroke(
                 Ellipse::new(
                     druid::Point::new(sx, sy),
                     druid::Vec2::new(sizex, sizey),
                     0.,
                 ),
-                &druid::Color::RED,
+                &druid::Color::BLACK,1.0
             );
         }
         for elem in &self.lines {
@@ -226,7 +227,7 @@ impl DruidCtxWriter {
                 let p2 = Self::scale_pt(*p2, max_vs, &window_size);
                 bpath.quad_to(druid::Point::new(p1.x,p1.y), druid::Point::new(p2.x,p2.y));
             }
-            ctx.stroke(bpath, &druid::Color::GREEN, 10.0);
+            ctx.stroke(bpath, &druid::Color::BLACK, 2.0);
         }
         for elem in &self.texts {
             let p = Self::scale_pt(elem.xy, max_vs, &window_size);
@@ -235,8 +236,8 @@ impl DruidCtxWriter {
             let to_draw = text.new_text_layout(elem.text.clone())
                 .default_attribute(TextAttribute::FontSize(14.0))
                 .build().unwrap();
-            
-            ctx.draw_text(&to_draw, druid::Point::new(p.x,p.y));
+            let t_size= to_draw.size();
+            ctx.draw_text(&to_draw, druid::Point::new(p.x-(t_size.width/2.),p.y-(t_size.height/2.)));
         }
     }
 }
