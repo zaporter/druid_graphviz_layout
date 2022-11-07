@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+#![allow(unused)]
 /*!
 This crate provides a library for parsing and rendering GraphViz files.  It
 supports many of the GraphViz features, like records, edge styles and
